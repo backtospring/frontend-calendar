@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Calendar</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+
+<body>
+    <header class="calendar-header">
+        <div class="container">
+            <div class="calendar_header_btns">
+                <button class="calendar-btn add-btn">Add</button>
+                <button class="calendar-btn update-btn" id="edit-update-popup">Update</button>
+            </div>
+            <div class="calendar-header-search">
+                <span class="search-event">
+                    <img class="search-img" src="images/musica-searcher.png" alt="">
+                </span>
+                <input class="search-input" id="search-input" type="text" placeholder="Event, date, member">
+            </div>
+            <div style="clear:both"></div>
+        </div>
+    </header>
+    <section class="calendar-content">
+        <div class="container">
+            <div class="calendar-dates-blk">
+                <button class="calendar-btn-left">&lt;</button>
+                <span class="calendar-current-date"></span>
+                <button class="calendar-btn-right"> &gt;</button>
+                <button class="calendar-today">Today</button>
+            </div>
+            <div id="calendar">
+                <table id="calendar-table"></table>
+            </div>
+        </div>
+    </section>
+    <div class="calendar-popup-add-event position-popup display-none">
+        <span class="close-popup">x</span>
+        <form id="form-add-event" action="javascript:void(0);">
+            <input type="text" id="title-event" placeholder="Event" class="input-form">
+            <!-- <input type="hidden" id="datetime-event" placeholder="Day, month, year" class="input-form"> -->
+            <input type="date" id="datetime-event" value="2017-06-01" class="input-form">
+            <input type="text" id="date-for-user-event" placeholder="Day, month, year" class="input-form">
+            <input type="text" id="members-event" placeholder="Members" class="input-form">
+            <textarea name="description" id="description-event" placeholder="Description" class="text-area-form"></textarea>
+            <button type="submit" id="ready_save" class="popup-btn">Ready</button>
+            <button type="submit" id="delete_in_ls" class="popup-btn">Delete</button>
+        </form>
+    </div>
+    <div class="popup-quick-add-event position-quick-popup display-none">
+        <span class="close-quick-popup">x</span>
+        <form id="form-quick-add-event" action="javascript:void(0);">
+            <input type="text" id="quick-event" placeholder="5 March, happy birthday" class="input-form">
+            <button type="submit" id="create-save-event" class="popup-btn">Create</button>
+        </form>
+    </div>
+    <div class="popup-show-search-event position-show-search-popup display-none">
+        <div class="filling-popup">
+            <div class="popup-show-event">
+                <h5 class="title-event-show">Meet</h5>
+                <p>12 November</p>
+            </div>
+            <hr>
+            <div class="popup-show-event">
+                <h5 class="title-event-show">Meet</h5>
+                <p>12 November</p>
+            </div>
+        </div>
+    </div>
+    <script src="https://code.jquery.com/jquery-3.2.1.min.js"></script>
+    <script src="js/script.js"></script>
+    <script>
+        $(document).ready(function () {
+            var date = new Date();
+            var year = date.getFullYear();
+            var month = date.getMonth();
+            var today = date.getDate();
+            var text_date = '';
+            var result = {};
+            var title_event = '';
+            var datetime_event = '';
+            var date_for_user_event = '';
+            var members_event = '';
+            var description_event = '';
+
+            $('#edit-update-popup').on("click", function () {
+                editPopup();
+            });
+
+            $('#ready_save').on("click", function () {
+                saveDataPopup();
+            });
+
+            $('#search-input').on("focus", function () {
+            });
+            
+            $('#search-input').on("change keyup", function () {
+                showSearchPopup('#search-input');
+                searchDataFromLocalStorage('#search-input');
+            });
+
+            $('#create-save-event').on("click", function () {
+                saveDataQuickPopup();
+            });
+
+            $('#delete_in_ls').on("click", function () {
+                var datetime_event = $('#datetime-event').val();
+                $('#title-event').val('');
+                $('#members-event').val('');
+                $('#description-event').val('');
+                removeDataFromLocalStorage(datetime_event);
+            });
+
+            $('.add-btn').on("click", function () {
+                showQuickPopup();
+            });
+
+            $('.close-popup').on("click", function () {
+                $('.calendar-popup-add-event').addClass('display-none');
+            });
+
+            $('.close-quick-popup').on("click", function () {
+                $('.popup-quick-add-event').addClass('display-none');
+            });
+
+            $(".calendar-btn-left").on("click", function () {
+                result = showPrevMonth(year, month, today);
+                month = result.month;
+                year = result.year;
+                $('.calendar-popup-add-event').addClass('display-none');
+            });
+
+            $(".calendar-btn-right").on("click", function () {
+                result = showNextMonth(year, month, today);
+                month = result.month;
+                year = result.year;
+                $('.calendar-popup-add-event').addClass('display-none');
+            });
+
+            $(".calendar-today").on("click", function () {
+                result = showCurrentMonth(date, today);
+                month = result.month;
+                year = result.year;
+                $('.calendar-popup-add-event').addClass('display-none');
+            });
+
+            $('body').on('click', 'td.click_prev_month', function (e) {
+                var prev_num = e.target.textContent.split(', ')[1];
+                var prev_month_day = 'td:contains(' + prev_num + '):last';
+                result = showPrevMonth(year, month, today);
+                month = result.month;
+                year = result.year;
+                $(prev_month_day).addClass('active');
+                showPopup(prev_month_day);
+            });
+
+            $('body').on('click', 'td.click_next_month', function (e) {
+                var next_num = e.target.textContent;
+                var next_month_day = 'td:not(".click_prev_month"):contains(' + next_num + '):first';
+                result = showNextMonth(year, month, today);
+                month = result.month;
+                year = result.year;
+                $(next_month_day).addClass('active');
+                showPopup(next_month_day);
+            });
+
+            $('body').on('click', 'td:not(".click_prev_month"):not(".click_next_month")', function () {
+                $('td').removeClass('active');
+                $(this).addClass('active');
+                showPopup(this);
+            });
+
+            showCurrentMonth(date, today);
+        });
+    </script>
+</body>
+
+</html>
